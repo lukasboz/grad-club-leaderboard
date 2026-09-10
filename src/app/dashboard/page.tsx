@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/lib/auth-context';
+import { getSession } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -59,13 +60,18 @@ export default function Dashboard() {
     setMessage('');
 
     try {
-      const { session } = await (await fetch('/api/auth/session')).json();
+      const session = await getSession();
       
+      if (!session) {
+        setMessage('❌ Not authenticated. Please log in again.');
+        return;
+      }
+
       const response = await fetch('/api/expenses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           amount: parseFloat(formData.amount),
