@@ -59,7 +59,7 @@ export default function Dashboard() {
     setMessage('');
 
     try {
-      const { data: { session } } = await (await fetch('/api/auth/session')).json();
+      const { session } = await (await fetch('/api/auth/session')).json();
       
       const response = await fetch('/api/expenses', {
         method: 'POST',
