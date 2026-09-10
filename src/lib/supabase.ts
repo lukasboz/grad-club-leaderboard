@@ -3,15 +3,25 @@ import { createClient } from '@supabase/supabase-js';
 // Get environment variables with fallbacks for build time
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || '';
 
 // Lazy initialize supabase client only when actually needed
 let supabaseClient: ReturnType<typeof createClient> | null = null;
+let supabaseAdminClient: ReturnType<typeof createClient> | null = null;
 
 export const getSupabaseClient = () => {
   if (!supabaseClient && supabaseUrl && supabasePublishableKey) {
     supabaseClient = createClient(supabaseUrl, supabasePublishableKey);
   }
   return supabaseClient;
+};
+
+// Create a server-side admin client with the secret key (bypasses RLS)
+export const getSupabaseAdminClient = () => {
+  if (!supabaseAdminClient && supabaseUrl && supabaseSecretKey) {
+    supabaseAdminClient = createClient(supabaseUrl, supabaseSecretKey);
+  }
+  return supabaseAdminClient;
 };
 
 // Create a Supabase client with a user's access token (for server-side operations with RLS)

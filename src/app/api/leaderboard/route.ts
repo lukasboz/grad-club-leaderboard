@@ -1,9 +1,19 @@
-import { supabase } from '@/lib/supabase';
+import { getSupabaseAdminClient } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const { data: expenses, error: expensesError } = await supabase
+    const supabaseAdmin = getSupabaseAdminClient();
+    
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Server not properly configured' },
+        { status: 500 }
+      );
+    }
+
+    // Fetch expenses with profiles using admin client (bypasses RLS)
+    const { data: expenses, error: expensesError } = await supabaseAdmin
       .from('expenses')
       .select('user_id, amount, profiles(display_name, email)');
 
@@ -14,12 +24,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // If no expenses, return empty leaderboard
+    if (!expenses || expenses.length === 0) {
+      return NextResponse.json({ leaderboard: [] }, { status: 200 });
+    }
+
     // Calculate total spending per user
     const leaderboard = new Map<string, any>();
 
-    expenses?.forEach((expense: any) => {
+    expenses.forEach((expense: any) => {
       const userId = expense.user_id;
-      const displayName = expense.profiles?.display_name || 'Unknown';
+      const displayName = expense.profiles?.display_name || 'Unknown User';
       const email = expense.profiles?.email || '';
 
       if (!leaderboard.has(userId)) {
