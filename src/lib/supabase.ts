@@ -14,6 +14,20 @@ export const getSupabaseClient = () => {
   return supabaseClient;
 };
 
+// Create a Supabase client with a user's access token (for server-side operations with RLS)
+export const getSupabaseClientWithToken = (accessToken: string) => {
+  if (!supabaseUrl || !supabasePublishableKey) {
+    throw new Error('Supabase not initialized. Missing environment variables.');
+  }
+  return createClient(supabaseUrl, supabasePublishableKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+};
+
 // Export a proxy for backwards compatibility
 export const supabase = new Proxy({} as any, {
   get: (target, prop) => {
