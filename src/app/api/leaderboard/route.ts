@@ -12,10 +12,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch expenses with profiles using admin client (bypasses RLS)
+    // Fetch expenses using admin client (bypasses RLS)
     const { data: expenses, error: expensesError } = await supabaseAdmin
       .from('expenses')
-      .select('user_id, amount, date, created_at, profiles(display_name, email)');
+      .select('user_id, amount, date, created_at');
 
     if (expensesError) {
       return NextResponse.json(
@@ -29,13 +29,34 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ leaderboard: [] }, { status: 200 });
     }
 
+    // Get all unique user IDs to fetch their profiles
+    const userIds = [...new Set(expenses.map((e: any) => e.user_id))];
+
+    // Fetch profiles for these users
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, display_name, email')
+      .in('id', userIds);
+
+    if (profilesError) {
+      console.error('Profiles fetch error:', profilesError);
+      // Continue without profile data rather than failing
+    }
+
+    // Create a map of user profiles for quick lookup
+    const profileMap = new Map<string, any>();
+    (profiles || []).forEach((profile: any) => {
+      profileMap.set(profile.id, profile);
+    });
+
     // Calculate total spending per user and track most recent purchase
     const leaderboard = new Map<string, any>();
 
     expenses.forEach((expense: any) => {
       const userId = expense.user_id;
-      const displayName = expense.profiles?.display_name || 'Unknown User';
-      const email = expense.profiles?.email || '';
+      const profile = profileMap.get(userId);
+      const displayName = profile?.display_name || 'Unknown User';
+      const email = profile?.email || '';
       const expenseDate = expense.date || expense.created_at;
 
       if (!leaderboard.has(userId)) {
