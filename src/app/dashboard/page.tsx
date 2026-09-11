@@ -13,6 +13,8 @@ interface LeaderboardEntry {
   email: string;
   totalSpent: number;
   transactionCount: number;
+  mostRecentPurchaseDate: string | null;
+  mostRecentPurchaseAmount: number;
 }
 
 export default function Dashboard() {
@@ -184,6 +186,7 @@ export default function Dashboard() {
                       <th className="text-left py-3 px-4 font-bold text-gray-700">Rank</th>
                       <th className="text-left py-3 px-4 font-bold text-gray-700">Name</th>
                       <th className="text-left py-3 px-4 font-bold text-gray-700">Total Spent</th>
+                      <th className="text-left py-3 px-4 font-bold text-gray-700">Most Recent</th>
                       <th className="text-left py-3 px-4 font-bold text-gray-700">Transactions</th>
                     </tr>
                   </thead>
@@ -218,6 +221,18 @@ export default function Dashboard() {
                           </td>
                           <td className="py-3 px-4 text-lg font-bold text-indigo-600">
                             ${entry.totalSpent.toFixed(2)}
+                          </td>
+                          <td className="py-3 px-4 text-gray-600">
+                            {entry.mostRecentPurchaseDate ? (
+                              <div className="text-sm">
+                                <div className="font-medium">${entry.mostRecentPurchaseAmount.toFixed(2)}</div>
+                                <div className="text-xs text-gray-500">
+                                  {new Date(entry.mostRecentPurchaseDate).toLocaleDateString()}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 italic">No purchases</span>
+                            )}
                           </td>
                           <td className="py-3 px-4 text-gray-600">{entry.transactionCount}</td>
                         </tr>

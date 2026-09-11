@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     // Fetch expenses with profiles using admin client (bypasses RLS)
     const { data: expenses, error: expensesError } = await supabaseAdmin
       .from('expenses')
-      .select('user_id, amount, profiles(display_name, email)');
+      .select('user_id, amount, date, created_at, profiles(display_name, email)');
 
     if (expensesError) {
       return NextResponse.json(
@@ -29,13 +29,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ leaderboard: [] }, { status: 200 });
     }
 
-    // Calculate total spending per user
+    // Calculate total spending per user and track most recent purchase
     const leaderboard = new Map<string, any>();
 
     expenses.forEach((expense: any) => {
       const userId = expense.user_id;
       const displayName = expense.profiles?.display_name || 'Unknown User';
       const email = expense.profiles?.email || '';
+      const expenseDate = expense.date || expense.created_at;
 
       if (!leaderboard.has(userId)) {
         leaderboard.set(userId, {
@@ -44,12 +45,20 @@ export async function GET(request: NextRequest) {
           email,
           totalSpent: 0,
           transactionCount: 0,
+          mostRecentPurchaseDate: null,
+          mostRecentPurchaseAmount: 0,
         });
       }
 
       const user = leaderboard.get(userId);
       user.totalSpent += parseFloat(expense.amount);
       user.transactionCount += 1;
+
+      // Track most recent purchase (by date, then by created_at)
+      if (!user.mostRecentPurchaseDate || expenseDate > user.mostRecentPurchaseDate) {
+        user.mostRecentPurchaseDate = expenseDate;
+        user.mostRecentPurchaseAmount = parseFloat(expense.amount);
+      }
     });
 
     // Convert to array and sort by total spent (descending)
@@ -59,6 +68,7 @@ export async function GET(request: NextRequest) {
         ...user,
         rank: index + 1,
         totalSpent: parseFloat(user.totalSpent.toFixed(2)),
+        mostRecentPurchaseAmount: parseFloat(user.mostRecentPurchaseAmount.toFixed(2)),
       }));
 
     return NextResponse.json({ leaderboard: leaderboardArray }, { status: 200 });
