@@ -2,7 +2,7 @@
 CREATE TABLE public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
-  display_name TEXT,
+  display_name TEXT NOT NULL DEFAULT 'User',
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -29,6 +29,10 @@ ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view all profiles"
   ON public.profiles FOR SELECT
   USING (true);
+
+CREATE POLICY "Users can create own profile"
+  ON public.profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Users can update own profile"
   ON public.profiles FOR UPDATE
