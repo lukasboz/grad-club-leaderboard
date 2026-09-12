@@ -29,11 +29,11 @@ export async function POST(request: NextRequest) {
 
     // Create profile
     if (data.user) {
-      await supabase.from('profiles').insert({
+      await supabase.from('profiles').upsert({
         id: data.user.id,
         email: data.user.email,
         display_name: displayName || email.split('@')[0],
-      });
+      }, { onConflict: 'id' });
     }
 
     return NextResponse.json(
